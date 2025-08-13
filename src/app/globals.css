@@ -1,26 +1,35 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* Azul acinzentado */
+  --color-brand-100: #E6EBEF;
+  --color-brand-200: #C8D2D9;
+  --color-brand-300: #AAB9C3;
+  --color-brand-400: #8CA0AD;
+  --color-brand-500: #6D8797;
+  --color-brand-600: #526B7C;
+  --color-brand-700: #3E5362;
+  --color-brand-default: #2E3E4C;
+  --color-brand-900: #242F39;
+  --color-brand-1000: #1B232B;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-accent-100: #FFF8E1;
+  --color-accent-200: #FFEDB3;
+  --color-accent-300: #FFE285;
+  --color-accent-default: #FFD86E;
+  --color-accent-500: #FBC34A;
+  --color-accent-600: #E0A92E;
+  --color-accent-700: #B98923;
+  --color-accent-800: #926A1B;
+  --color-accent-900: #6B4D13;
+  --color-accent-1000: #45310B;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-regex-error: rgba(229, 57, 53, 0.35);
+
+  --color-regex-success: rgba(76, 175, 80, 0.35);
+  --color-success-300: #4CAF50;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
