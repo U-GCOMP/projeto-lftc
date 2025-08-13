@@ -3,18 +3,11 @@ import trashIcon from "@/assets/icons/trash-icon.svg";
 import BaseScreen from "@/components/base-screen/base-screen";
 import TextInput from "@/components/text-input/text-input";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function TesteRegexPage() {
   const [regex, setRegex] = useState("^$");
   const [testStringArray, setTestStringArray] = useState<string[]>([""]);
-
-  useEffect(() => {
-    testStringArray.forEach((testString, index) => {
-      testStringMatches(testString, index);
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regex, testStringArray.length]);
 
   const addTestString = () => {
     setTestStringArray([...testStringArray, ""]);
@@ -30,17 +23,6 @@ export default function TesteRegexPage() {
     const newArray = [...testStringArray];
     newArray[index] = value;
     setTestStringArray(newArray);
-
-    testStringMatches(value, index);
-  };
-
-  const testStringMatches = (value: string, index: number) => {
-    if (!RegExp(regex).test(value)) {
-      document.getElementById(`test-string-${index}`)?.style.setProperty("background-color", "var(--color-regex-error)");
-      return;
-    }
-
-    document.getElementById(`test-string-${index}`)?.style.setProperty("background-color", "var(--color-regex-success)");
   };
 
   return (
@@ -109,6 +91,7 @@ export default function TesteRegexPage() {
                   </button>
                 )}
                 <TextInput
+                  className={RegExp(regex).test(testString) ? "bg-regex-success" : "bg-regex-error"}
                   id={`test-string-${index}`}
                   label={`String de Teste ${index + 1}`}
                   value={testString}

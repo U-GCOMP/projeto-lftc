@@ -4,6 +4,7 @@ export interface TextInputProps {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
+    className?: string;
 }
 
 export default function TextInput(props: TextInputProps) {
@@ -13,7 +14,7 @@ export default function TextInput(props: TextInputProps) {
             <input
                 id={props.id}
                 type="text"
-                className="flex flex-1 w-full px-4 py-2 border border-gray-300 focus:border-accent-300 rounded focus:outline-none focus:ring-1 focus:ring-accent-300"
+                className={`flex flex-1 w-full px-4 py-2 border border-gray-300 focus:border-accent-300 rounded focus:outline-none focus:ring-1 focus:ring-accent-300 ${props.className ?? ''}`}
                 placeholder={props.placeholder}
                 value={props.value}
                 onChange={(e) => props.onChange(e.target.value)}
