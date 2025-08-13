@@ -4,7 +4,7 @@ export default function BaseScreen({ children }: { children: React.ReactNode }) 
   return (
     <>
       <Navbar />
-      <div className="p-6">
+      <div className="flex flex-col flex-1 p-6">
         {children}
       </div>
     </>
