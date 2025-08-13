@@ -78,13 +78,13 @@ export default function TesteRegexPage() {
             mr-2
           "
         >
-          <span className="flex flex-1 justify-between w-full">
+          <span className="flex flex-1 max-h-fit justify-between w-full">
             <h2 className="text-2xl bg-brand-default px-2 text-accent-default">
               Strings de Teste
             </h2>
 
             <button
-              className="bg-brand-default text-success-300 px-2 border-success-300 border-2 rounded hover:bg-success-300 hover:text-white transition-all duration-200"
+              className="h-fit bg-brand-default text-success-300 px-2 border-success-300 border-2 rounded hover:bg-success-300 hover:text-white transition-all duration-200"
               onClick={addTestString}
               aria-label="Adicionar String de Teste"
             >
@@ -92,7 +92,7 @@ export default function TesteRegexPage() {
             </button>
           </span>
 
-          <section className="flex flex-wrap gap-4 mt-4 w-full mx-auto justify-center-safe">
+          <section className="flex flex-wrap items-start gap-4 mt-4 w-full mx-auto justify-center-safe">
             {testStringArray.map((testString, index) => (
               <div
                 key={index}
