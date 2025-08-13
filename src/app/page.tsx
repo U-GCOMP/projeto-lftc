@@ -1,72 +1,31 @@
-'use client';
-
-import { useState, useRef } from 'react';
+import BaseScreen from "@/components/base-screen/base-screen";
 
 export default function Home() {
-  const [regexText, setRegexText] = useState('');
-  const [teste, setTeste] = useState('');
-  const [regex, setRegex] = useState<RegExp | null>(null);
-
-  const regexInput = useRef<HTMLInputElement>(null);
-  const testeInput = useRef<HTMLInputElement>(null);
-
-  const validarRegex = (value: string, testeAtual: string) => {
-    try {
-      const novaRegex = new RegExp(value);
-      setRegex(novaRegex);
-      if (regexInput.current) regexInput.current.style.background = 'lightgreen';
-      validarTeste(testeAtual, novaRegex);
-    } catch {
-      setRegex(null);
-      if (regexInput.current) regexInput.current.style.background = 'lightcoral';
-      if (testeInput.current) testeInput.current.style.background = 'lightcoral';
-    }
-  };
-
-  const validarTeste = (value: string, regexParaUsar?: RegExp | null) => {
-    const r = regexParaUsar ?? regex;
-    try {
-      if (r && r.test(value)) {
-        if (testeInput.current) testeInput.current.style.background = 'lightgreen';
-      } else {
-        if (testeInput.current) testeInput.current.style.background = 'lightcoral';
-      }
-    } catch {
-      if (testeInput.current) testeInput.current.style.background = 'lightcoral';
-    }
-  };
-
   return (
-    <>
-      <label htmlFor="regex">REGEX: </label>
-      <input
-        type="text"
-        id="regex"
-        ref={regexInput}
-        value={regexText}
-        style={{border: '1px solid white'}}
-        onChange={(e) => {
-          const valor = e.target.value;
-          setRegexText(valor);
-          validarRegex(valor, teste);
-        }}
-      />
-
-      <br />
-
-      <label htmlFor="teste">TESTAR: </label>
-      <input
-        id="teste"
-        type="text"
-        ref={testeInput}
-        value={teste}
-        style={{border: '1px solid white'}}
-        onChange={(e) => {
-          const valor = e.target.value;
-          setTeste(valor);
-          validarTeste(valor);
-        }}
-      />
-    </>
+    <BaseScreen>
+      <main className="flex-1 flex flex-col items-center justify-around text-center px-6">
+        <span>
+          <h1 className="text-3xl font-bold mb-2 text-accent-default">
+            Projetos de Linguagens Formais e Teoria da Computação
+          </h1>
+          <h2 className="text-xl font-semibold text-accent-300 mb-4">
+            FCT - Unesp
+          </h2>
+        </span>
+        <p className="max-w-2xl text-white mb-6 text-lg">
+          Este é um site desenvolvido por alunos da FCT - Unesp para centralizar
+          os projetos realizados na disciplina de Linguagens Formais e Teoria da
+          Computação.
+        </p>
+        <span>
+          <h3 className="text-lg font-medium mb-2 text-accent-default">Desenvolvido por:</h3>
+          <ul className="space-y-1 text-gray-300">
+            <li className="text-white">José Henrique Ioki Yamaoki</li>
+            <li className="text-white">Raphael Gonçalves Leiva</li>
+            <li className="text-white">Vítor Moreira Rodrigues</li>
+          </ul>
+        </span>
+      </main>
+    </BaseScreen>
   );
 }
