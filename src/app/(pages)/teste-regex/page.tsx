@@ -60,7 +60,7 @@ export default function TesteRegexPage() {
             mr-2
           "
         >
-          <span className="flex flex-1 max-h-fit justify-between w-full">
+          <span className="flex max-h-fit justify-between w-full">
             <h2 className="text-2xl bg-brand-default px-2 text-accent-default">
               Strings de Teste
             </h2>
