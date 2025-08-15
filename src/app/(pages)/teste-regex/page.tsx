@@ -25,6 +25,15 @@ export default function TesteRegexPage() {
     setTestStringArray(newArray);
   };
 
+  const testRegex = (input: string) => {
+    try {
+      const regexObj = new RegExp(regex);
+      return regexObj.test(input);
+    } catch (error) {
+      return false;
+    }
+  };
+
   return (
     <BaseScreen>
       <main className="flex flex-1 flex-col items-center">
@@ -91,7 +100,7 @@ export default function TesteRegexPage() {
                   </button>
                 )}
                 <TextInput
-                  className={RegExp(regex).test(testString) ? "bg-regex-success" : "bg-regex-error"}
+                  className={testRegex(testString) ? "bg-regex-success" : "bg-regex-error"}
                   id={`test-string-${index}`}
                   label={`String de Teste ${index + 1}`}
                   value={testString}
