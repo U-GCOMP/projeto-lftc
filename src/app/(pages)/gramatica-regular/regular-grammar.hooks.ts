@@ -1,6 +1,6 @@
 import { createRef, useCallback, useRef, useState } from "react";
 import { RegularGrammarProps, RegularGrammarRule } from "./regular-grammar.types";
-import { GLUD_NON_TERMINAL_REGEX, GLUD_VALUE_REGEX } from "./regular-grammar.constants";
+import { GLUD_NON_TERMINAL_REGEX, GLUD_VALUE_REGEX, TERMINAL_REGEX } from "./regular-grammar.constants";
 import { nextTick } from "process";
 
 export function useGrammar(): RegularGrammarProps {
@@ -89,9 +89,16 @@ export function useGrammar(): RegularGrammarProps {
                 if (production === '') {
                     if (canGenerate('', remaining)) return true;
                 } else if (production.length === 'a'.length) {
-                    if (remaining[0] === production && canGenerate('', remaining.slice(1))) {
+                    const isTerminal = production[0].match(TERMINAL_REGEX);
+
+                    if (isTerminal && remaining[0] === production && canGenerate('', remaining.slice(1))) {
                         return true;
                     }
+
+                    if (!isTerminal && canGenerate(production, remaining)) {
+                        return true;
+                    }
+                    
                 } else if (production.length === 'aB'.length) {
                     const terminal = production[0];
                     const nonTerminal = production[1];
