@@ -23,4 +23,5 @@ export interface RegularGrammarProps {
     addTestString: () => void;
     removeTestStringAt: (index: number) => void;
     testGrammar: (input: string) => boolean;
+    handleRuleValuePressEnter: (index: number) => void;
 }

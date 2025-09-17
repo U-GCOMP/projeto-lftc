@@ -25,7 +25,7 @@ export function TestInputComponent({
         <div
             className={`
                 relative flex items-center group duration-200
-                ${shouldShowDeleteButton ? "hover:pr-[2rem] focus-within:pr-[2rem]" : ""}
+                ${shouldShowDeleteButton ? "hover:pr-[2.5rem] focus-within:pr-[2.5rem]" : ""}
             `}
             aria-live="polite"
         >
@@ -47,7 +47,7 @@ export function TestInputComponent({
             />
             {testStringArray.length > 1 && (
                 <IconAppButton
-                    className="absolute mt-5 right-1 h-[32px] opacity-0 transition-all duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
+                    className="absolute mt-5 right-1 h-[2rem] opacity-0 transition-all duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
                     onClick={() => removeTestString(index)}
                     icon={trashIcon}
                     alt="Remover String de Teste"

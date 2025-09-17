@@ -8,7 +8,7 @@ export function RegularGrammarRow({ className, rule, setRule, onDeleteRow, shoul
         <div
             className={`
                 relative flex gap-2 justify-center items-center group 
-                ${shouldShowDeleteButton ? "transition-all duration-200 hover:pr-[2rem] focus-within:pr-[2rem]" : ""}
+                ${shouldShowDeleteButton ? "transition-all duration-200 hover:pr-[2.5rem] focus-within:pr-[2.5rem]" : ""}
                 ${className}
             `}
         >
@@ -49,7 +49,7 @@ export function RegularGrammarRow({ className, rule, setRule, onDeleteRow, shoul
             </div>
             { shouldShowDeleteButton && (
                 <IconAppButton
-                    className="absolute right-1 h-[32px] opacity-0 transition-all duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
+                    className="absolute right-1 h-[2rem] opacity-0 transition-all duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
                     onClick={onDeleteRow}
                     icon={trashIcon}
                     alt="Remover Regra"

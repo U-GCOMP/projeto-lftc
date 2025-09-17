@@ -14,17 +14,9 @@ export function RegularGrammarLayout({
     setTestStringAt,
     addTestString,
     removeTestStringAt,
-    testGrammar
+    testGrammar,
+    handleRuleValuePressEnter
 }: RegularGrammarProps) {
-    function handleRuleValuePressEnter(index: number) {
-        if (index === rulesArray.length - 1) {
-            addRuleRow();
-            return;
-        }
-
-        rulesArray[index + 1].nonTerminalInputRef.current?.focus();
-    }
-
     return (
         <BaseScreen>
             <main className="flex flex-1 flex-col items-center">
