@@ -30,6 +30,27 @@
   --color-success-300: #4CAF50;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-500) transparent;
+}
+
+/* For Webkit browsers */
+*::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-brand-500);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+}
+
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
