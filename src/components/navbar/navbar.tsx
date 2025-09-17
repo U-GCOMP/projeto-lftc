@@ -15,6 +15,7 @@ export default function Navbar() {
         <ul className="flex space-x-6 justify-center">
           <NavbarLink href={AppRoutes.HOME}>Home</NavbarLink>
           <NavbarLink href={AppRoutes.TESTE_REGEX}>Teste Regex</NavbarLink>
+          <NavbarLink href={AppRoutes.GRAMATICA_REGULAR}>Gramática Regular</NavbarLink>
         </ul>
       </nav>
     )
