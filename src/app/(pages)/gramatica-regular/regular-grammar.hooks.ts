@@ -36,6 +36,16 @@ export function useGrammar(): RegularGrammarProps {
         const updated = [...rulesArray];
         updated.splice(index, 1);
         setRulesArray(updated);
+
+        if (index == 0) {
+            nextTick(() => {
+                updated[0]?.nonTerminalInputRef.current?.focus();
+            });
+        } else {
+            nextTick(() => {
+                updated[index - 1]?.nonTerminalInputRef.current?.focus();
+            });
+        }
     }
 
     function setTestStringAt(index: number, value: string) {
