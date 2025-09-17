@@ -9,7 +9,7 @@ export function useGrammar(): RegularGrammarProps {
 
     function setRuleAt(index: number, newRule: RegularGrammarRule) {
         const formattedValue = newRule.value.replaceAll(" ", "");
-        const formattedNonTerminal = newRule.nonTerminal.replaceAll(" ", "");
+        const formattedNonTerminal = newRule.nonTerminal.replaceAll(" ", "").toUpperCase();
 
         const isValid =
             (formattedValue === "" || GLUD_VALUE_REGEX.test(formattedValue)) &&
