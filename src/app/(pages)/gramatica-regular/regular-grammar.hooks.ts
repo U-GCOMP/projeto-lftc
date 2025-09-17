@@ -1,4 +1,4 @@
-import { createRef, useCallback, useRef, useState } from "react";
+import { createRef, useCallback, useEffect, useRef, useState } from "react";
 import { RegularGrammarProps, RegularGrammarRule } from "./regular-grammar.types";
 import { GLUD_NON_TERMINAL_REGEX, GLUD_VALUE_REGEX, TERMINAL_REGEX } from "./regular-grammar.constants";
 import { nextTick } from "process";
@@ -6,6 +6,10 @@ import { nextTick } from "process";
 export function useGrammar(): RegularGrammarProps {
     const [rulesArray, setRulesArray] = useState<RegularGrammarRule[]>([{ nonTerminalInputRef: useRef(null), nonTerminal: "S", value: "" }]);
     const [testStringArray, setTestStringArray] = useState<string[]>([""]);
+    const [isHintModalOpen, setIsHintModalOpen] = useState(false);
+
+    const hintBoxRef = useRef<HTMLDivElement>(null);
+    const hintButtonRef = useRef<HTMLButtonElement>(null);
 
     function setRuleAt(index: number, newRule: RegularGrammarRule) {
         const formattedValue = newRule.value.replaceAll(" ", "");
@@ -98,7 +102,7 @@ export function useGrammar(): RegularGrammarProps {
                     if (!isTerminal && canGenerate(production, remaining)) {
                         return true;
                     }
-                    
+
                 } else if (production.length === 'aB'.length) {
                     const terminal = production[0];
                     const nonTerminal = production[1];
@@ -124,6 +128,26 @@ export function useGrammar(): RegularGrammarProps {
         rulesArray[index + 1].nonTerminalInputRef.current?.focus();
     }
 
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            const hintBox = hintBoxRef.current;
+            const hintButton = hintButtonRef.current;
+
+            if (event.target instanceof Node && 
+                hintBox && !hintBox.contains(event.target) && 
+                hintButton && !hintButton.contains(event.target)) {
+                setIsHintModalOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        }
+    }, [])
+
     return {
         addRuleRow,
         removeRuleRowAt,
@@ -134,6 +158,10 @@ export function useGrammar(): RegularGrammarProps {
         removeTestStringAt,
         setTestStringAt,
         testStringArray,
-        testGrammar
+        testGrammar,
+        hintBoxRef,
+        hintButtonRef,
+        isHintModalOpen,
+        setIsHintModalOpen,
     };
 }
