@@ -98,10 +98,20 @@ export function useGrammar(): RegularGrammarProps {
         return canGenerate(startSymbol, input);
     }, [rulesArray]);
 
+    function handleRuleValuePressEnter(index: number) {
+        if (index === rulesArray.length - 1) {
+            addRuleRow();
+            return;
+        }
+
+        rulesArray[index + 1].nonTerminalInputRef.current?.focus();
+    }
+
     return {
         addRuleRow,
         removeRuleRowAt,
         rulesArray,
+        handleRuleValuePressEnter,
         setRuleAt,
         addTestString,
         removeTestStringAt,
