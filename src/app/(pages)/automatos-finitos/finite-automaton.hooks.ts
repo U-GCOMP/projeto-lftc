@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Click, FiniteAutomatonProps } from "./finite-automaton.types";
 import { Camera, CanvasSize, State, Transition, Mode, Point } from "./finite-automaton.types";
+import { radius, arrowHeadSize, foregroundColor, backgroundColor } from "./finite-automaton.constants";
 
 export function useAutomaton(): FiniteAutomatonProps {
     const [states, setStates] = useState<State[]>([]);
@@ -17,15 +18,13 @@ export function useAutomaton(): FiniteAutomatonProps {
     const lastPosRef = useRef({ x: 0, y: 0 });
     const cameraRef = useRef(camera);
 
-    const backgroundColor = "#222";
-    const foregroundColor = "#fff";
 
     function drawBackground(ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = backgroundColor;
         ctx.fillRect(-1000, -1000, 2000, 2000);
     }
 
-    function drawArrowHead(ctx: CanvasRenderingContext2D, from: Point, to: Point, radius = 5, size = 3) {
+    function drawArrowHead(ctx: CanvasRenderingContext2D, from: Point, to: Point) {
         const dx = to.x - from.x;
         const dy = to.y - from.y;
         const angle = Math.atan2(dy, dx);
@@ -37,13 +36,13 @@ export function useAutomaton(): FiniteAutomatonProps {
         ctx.beginPath();
         ctx.moveTo(endX, endY);
         ctx.lineTo(
-            endX - size * Math.cos(angle - Math.PI / 6),
-            endY - size * Math.sin(angle - Math.PI / 6)
+            endX - arrowHeadSize * Math.cos(angle - Math.PI / 6),
+            endY - arrowHeadSize * Math.sin(angle - Math.PI / 6)
         );
         ctx.moveTo(endX, endY);
         ctx.lineTo(
-            endX - size * Math.cos(angle + Math.PI / 6),
-            endY - size * Math.sin(angle + Math.PI / 6)
+            endX - arrowHeadSize * Math.cos(angle + Math.PI / 6),
+            endY - arrowHeadSize * Math.sin(angle + Math.PI / 6)
         );
         ctx.stroke();
     }
@@ -51,17 +50,36 @@ export function useAutomaton(): FiniteAutomatonProps {
     function drawState(
         ctx: CanvasRenderingContext2D,
         state: State,
-        radius: number,
         bgColor: string,
         fgColor: string,
     ) {
         // circle in world coords (uses current transformed ctx)
-        ctx.beginPath();
-        ctx.arc(state.x, state.y, radius, 0, 2 * Math.PI);
         ctx.fillStyle = bgColor;
         ctx.strokeStyle = fgColor;
+
+        // Main circle
+        ctx.beginPath();
+        ctx.arc(state.x, state.y, radius, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
+
+        // Final state inner ring
+        if (state.final) {
+            ctx.beginPath();
+            ctx.arc(state.x, state.y, radius - 1, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+        // Initial state triangle
+        if (state.initial) {
+            ctx.beginPath();
+            ctx.moveTo(state.x - radius, state.y); // left border of the circle
+            ctx.lineTo(state.x - 2 * radius, state.y + radius); // upper corner of the triangle
+            ctx.lineTo(state.x - 2 * radius, state.y - radius); // bottom corner of the triangle
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
 
         // draw name upright in screen coordinates
         ctx.save();
@@ -86,7 +104,6 @@ export function useAutomaton(): FiniteAutomatonProps {
         origin: State,
         destination: State,
         fgColor: string,
-        radius = 5
     ) {
         const values = transitions
         .filter(t => t.origin === origin && t.destination === destination)
@@ -184,7 +201,7 @@ export function useAutomaton(): FiniteAutomatonProps {
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
-            let i = 1;
+            let i = 0;
             for (const v of values) {
                 const worldPos = {
                     x: cp1.x + perpVector.x * spacing * i,
@@ -195,7 +212,7 @@ export function useAutomaton(): FiniteAutomatonProps {
                 i++;
             }
 
-            i = -1;
+            i = 0;
             for (const v of reverseValues) {
                 const worldPos = {
                     x: cp2.x + perpVector.x * spacing * i,
@@ -241,7 +258,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         }
 
         for (const state of states) {
-            drawState(ctx, state, 5, backgroundColor, foregroundColor);
+            drawState(ctx, state, backgroundColor, foregroundColor);
         }
 
         ctx.restore();
@@ -314,7 +331,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         return { x: nx, y: ny };
     }
 
-    function clickedOnState(x: number, y: number, radius = 5) : State | undefined{
+    function clickedOnState(x: number, y: number) : State | undefined{
         // convert screen coords to world coords
         const pos = screenToWorld({x, y});
 
@@ -328,14 +345,13 @@ export function useAutomaton(): FiniteAutomatonProps {
 
     function deleteStateAtClick(
         e: MouseEvent,
-        radius = 5
     ) {
         const canvas = e.currentTarget as HTMLCanvasElement;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        const clickedState = clickedOnState(e.offsetX, e.offsetY, radius);
+        const clickedState = clickedOnState(e.offsetX, e.offsetY);
 
         if (clickedState) {
             removeState(clickedState); // remove from states and associated transitions
@@ -345,22 +361,20 @@ export function useAutomaton(): FiniteAutomatonProps {
 
     function selectStateAtClick(
         e: MouseEvent,
-        radius = 5
     ) {
         const canvas = e.currentTarget as HTMLCanvasElement;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        const clickedState = clickedOnState(e.offsetX, e.offsetY, radius);
+        const clickedState = clickedOnState(e.offsetX, e.offsetY);
 
         if (clickedState) {
             selected.current = clickedState;
         }
     }
 
-    function linkStateAtUp(e: MouseEvent, radius = 5) {
-        console.log(`Selected: ${selected.current}`)
+    function linkStateAtUp(e: MouseEvent) {
         if (!selected.current) return;
 
         const canvas = e.currentTarget as HTMLCanvasElement;
@@ -369,7 +383,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         if (!ctx) return;
 
         // detect if user released over a state
-        const clickedState = clickedOnState(e.offsetX, e.offsetY, radius);
+        const clickedState = clickedOnState(e.offsetX, e.offsetY);
 
         if (clickedState) {
             const value = prompt("Insira o valor da transição:");
@@ -396,12 +410,12 @@ export function useAutomaton(): FiniteAutomatonProps {
         }
 
         if (mode === Mode.LINK && e.button === Click.LEFT) {
-            selectStateAtClick(e, 5);
+            selectStateAtClick(e);
         }
 
         // Delete states
         if (mode === Mode.DELETE && e.button === Click.LEFT) {
-            deleteStateAtClick(e, 5);
+            deleteStateAtClick(e);
         }
 
         // Select states
@@ -412,11 +426,34 @@ export function useAutomaton(): FiniteAutomatonProps {
             }
         }
 
-        console.log(e.button);
         if (mode === Mode.SELECT && e.button === Click.RIGHT) {
             const clickedState = clickedOnState(e.offsetX, e.offsetY);
             if (clickedState) {
-                console.log("Deve dar a opcao do usuario escolher que o no seja inicial ou final");
+                const choice = window.prompt(
+                    "Set state type:\n1 = Initial\n2 = Final\n3 = Both\n0 = Normal",
+                    "0"
+                );
+
+                switch (choice) {
+                    case "1":
+                        clickedState.initial = true;
+                        clickedState.final = false;
+                        break;
+                    case "2":
+                        clickedState.initial = false;
+                        clickedState.final = true;
+                        break;
+                    case "3":
+                        clickedState.initial = true;
+                        clickedState.final = true;
+                        break;
+                    default:
+                        clickedState.initial = false;
+                        clickedState.final = false;
+                        break;
+                }
+
+                draw(ctx); // re-render canvas}
             }
         }
     }
@@ -460,7 +497,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         lastPosRef.current = { x: e.clientX, y: e.clientY };
         
         if (mode === Mode.LINK) {
-            linkStateAtUp(e, 5);
+            linkStateAtUp(e);
         }
 
         selected.current = null;
