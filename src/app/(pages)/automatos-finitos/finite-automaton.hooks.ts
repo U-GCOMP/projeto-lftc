@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Click, FiniteAutomatonProps } from "./finite-automaton.types";
+import { MouseButton, MouseButtons, FiniteAutomatonProps } from "./finite-automaton.types";
 import { Camera, CanvasSize, State, Transition, Mode, Point } from "./finite-automaton.types";
-import { radius, arrowHeadSize, foregroundColor, backgroundColor } from "./finite-automaton.constants";
+import { radius, arrowHeadSize, foregroundColor, backgroundColor, zoomFactor } from "./finite-automaton.constants";
 
 export function useAutomaton(): FiniteAutomatonProps {
     const [states, setStates] = useState<State[]>([]);
@@ -84,17 +84,13 @@ export function useAutomaton(): FiniteAutomatonProps {
         // draw name upright in screen coordinates
         ctx.save();
         // reset transform to identity (draw in pixel space)
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-        // compute screen position of the state's world coordinates
-        const sx = canvasSize.width / 2 + (state.x - camera.x) * camera.z;
-        const sy = canvasSize.height / 2 - (state.y - camera.y) * camera.z;
+        ctx.scale(1, -1);
 
         ctx.fillStyle = fgColor; // text color
-        ctx.font = `${Math.max(12, radius * 2)}px Arial`;
+        ctx.font = '3px Arial';
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(state.name, sx, sy);
+        ctx.fillText(state.name, state.x, -state.y);
 
         ctx.restore();
     }
@@ -144,21 +140,20 @@ export function useAutomaton(): FiniteAutomatonProps {
 
             drawArrowHead(ctx, origin, destination);
 
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // reset to screen space
+            ctx.scale(1, -1); // reset to screen space
 
-            ctx.font = "12px serif";
+            ctx.font = "3px Arial";
             ctx.fillStyle = fgColor;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
             let i = 1;
             for (const v of values) {
-                const worldPos = {
+                const pos = {
                     x: midPoint.x + perpVector.x * spacing * i,
                     y: midPoint.y + perpVector.y * spacing * i
                 };
-                const pos = worldToScreen(worldPos);
-                ctx.fillText(v, pos.x, pos.y);
+                ctx.fillText(v, pos.x, -pos.y);
                 i++;
             }
 
@@ -194,32 +189,30 @@ export function useAutomaton(): FiniteAutomatonProps {
 
             // Draw stacked labels
             ctx.save();
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(1, -1);
 
-            ctx.font = "12px serif";
+            ctx.font = "3px Arial";
             ctx.fillStyle = fgColor;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
             let i = 0;
             for (const v of values) {
-                const worldPos = {
+                const pos = {
                     x: cp1.x + perpVector.x * spacing * i,
                     y: cp1.y + perpVector.y * spacing * i,
                 };
-                const screenPos = worldToScreen(worldPos);
-                ctx.fillText(v, screenPos.x, screenPos.y);
+                ctx.fillText(v, pos.x, -pos.y);
                 i++;
             }
 
             i = 0;
             for (const v of reverseValues) {
-                const worldPos = {
+                const pos = {
                     x: cp2.x + perpVector.x * spacing * i,
                     y: cp2.y + perpVector.y * spacing * i,
                 };
-                const screenPos = worldToScreen(worldPos);
-                ctx.fillText(v, screenPos.x, screenPos.y);
+                ctx.fillText(v, pos.x, -pos.y);
                 i--;
             }
 
@@ -403,30 +396,30 @@ export function useAutomaton(): FiniteAutomatonProps {
         lastPosRef.current = { x: e.clientX, y: e.clientY };
 
         // Insert states
-        if (mode === Mode.INSERT && e.button === Click.LEFT) {
+        if (mode === Mode.INSERT && e.button === MouseButton.LEFT) {
             const pos = screenToWorld({x: e.offsetX, y: e.offsetY});
             addState(`q${stateCount.current}`, pos.x, pos.y);
             draw(ctx);
         }
 
-        if (mode === Mode.LINK && e.button === Click.LEFT) {
+        if (mode === Mode.LINK && e.button === MouseButton.LEFT) {
             selectStateAtClick(e);
         }
 
         // Delete states
-        if (mode === Mode.DELETE && e.button === Click.LEFT) {
+        if (mode === Mode.DELETE && e.button === MouseButton.LEFT) {
             deleteStateAtClick(e);
         }
 
         // Select states
-        if (mode === Mode.SELECT && e.button === Click.LEFT) {
+        if (mode === Mode.SELECT && e.button === MouseButton.LEFT) {
             const clickedState = clickedOnState(e.offsetX, e.offsetY);
             if (clickedState) {
                 moveStates.current = [clickedState];
             }
         }
 
-        if (mode === Mode.SELECT && e.button === Click.RIGHT) {
+        if (mode === Mode.SELECT && e.button === MouseButton.RIGHT) {
             const clickedState = clickedOnState(e.offsetX, e.offsetY);
             if (clickedState) {
                 const choice = window.prompt(
@@ -467,7 +460,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         const prevPos = lastPosRef.current;
         const currPos = { x: e.clientX, y: e.clientY };
 
-        if (mode === Mode.SELECT && e.button === Click.LEFT && moveStates.current) {
+        if (mode === Mode.SELECT && e.buttons === MouseButtons.LEFT && moveStates.current) {
             // compute screen delta
             const dxScreen = currPos.x - prevPos.x;
             const dyScreen = currPos.y - prevPos.y;
@@ -482,6 +475,23 @@ export function useAutomaton(): FiniteAutomatonProps {
             }
 
             draw(ctx);
+        }
+
+        if (e.buttons === MouseButtons.MIDDLE || (mode === Mode.DRAG && e.buttons === MouseButtons.LEFT)) {
+            const prev = lastPosRef.current;
+            const curr = { x: e.clientX, y: e.clientY };
+
+            // screen–space delta
+            const dx = curr.x - prev.x;
+            const dy = curr.y - prev.y;
+
+            // adjust camera position in world space
+            camera.x -= dx / camera.z;
+            camera.y += dy / camera.z; // note Y is inverted (canvas has flipped Y)
+
+            draw(ctx);
+
+            lastPosRef.current = curr;
         }
 
         // update last position
@@ -504,6 +514,31 @@ export function useAutomaton(): FiniteAutomatonProps {
         moveStates.current = undefined;
     }
 
+    function onWheel(e: WheelEvent) {
+        e.preventDefault(); // prevent page scrolling
+
+        const canvas = document.getElementById("canvas") as HTMLCanvasElement | null;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+        if (!ctx) return;
+
+        // determine zoom direction: negative deltaY means zoom in
+        const zoomAmount = e.deltaY * -0.001; // scale factor, adjust as needed
+        const zoomFactor = 1 + zoomAmount;
+
+        // compute mouse position in world coordinates
+        const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+        const mouseWorldX = camera.x + (e.clientX - rect.left - canvasSize.width / 2) / camera.z;
+        const mouseWorldY = camera.y - (e.clientY - rect.top - canvasSize.height / 2) / camera.z;
+
+        // apply zoom towards mouse position
+        camera.z *= zoomFactor;
+        camera.x = mouseWorldX - (e.clientX - rect.left - canvasSize.width / 2) / camera.z;
+        camera.y = mouseWorldY + (e.clientY - rect.top - canvasSize.height / 2) / camera.z;
+
+        draw(ctx); // redraw after zoom
+    }
+
     // Efeito para atualizar o canvas
     useEffect(() => {
         const canvas = document.getElementById("canvas") as HTMLCanvasElement | null;
@@ -519,10 +554,12 @@ export function useAutomaton(): FiniteAutomatonProps {
         canvas.addEventListener("mouseup", onMouseUp);
         canvas.addEventListener("mousemove", onMouseMove);
         canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+        canvas.addEventListener("wheel", onWheel);
         return () => {
             canvas.removeEventListener("mousedown", onMouseDown);
             canvas.removeEventListener("mouseup", onMouseUp);
             canvas.removeEventListener("mousemove", onMouseMove);
+            canvas.removeEventListener("wheel", onWheel);
         };
     }, [states, transitions, mode]);
 

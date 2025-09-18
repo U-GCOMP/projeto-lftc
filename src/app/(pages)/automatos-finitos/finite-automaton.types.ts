@@ -65,11 +65,16 @@ export enum Mode {
     LINK = 'link',
 }
 
-export enum Click {
-    LEFT = 0,    // MouseEvent.button === 0
-    MIDDLE = 1,  // MouseEvent.button === 1 (wheel)
-    RIGHT = 2,   // MouseEvent.button === 2
-    DOUBLE = 3,  // Custom value for double click (MouseEvent.detail === 2)
+export enum MouseButtons {
+    LEFT = 1,
+    MIDDLE = 2,
+    RIGHT = 4,
+}
+
+export enum MouseButton {
+    LEFT = 0,
+    MIDDLE = 1,
+    RIGHT = 2,
 }
 
 export interface Point {
