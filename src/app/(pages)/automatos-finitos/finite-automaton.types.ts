@@ -62,3 +62,8 @@ export enum Mode {
     DELETE = 'delete',
     LINK = 'link',
 }
+
+export interface Point {
+    x: number;
+    y: number;
+}
