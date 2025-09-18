@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FiniteAutomatonProps } from "./finite-automaton.types";
+import { Click, FiniteAutomatonProps } from "./finite-automaton.types";
 import { Camera, CanvasSize, State, Transition, Mode, Point } from "./finite-automaton.types";
 
 export function useAutomaton(): FiniteAutomatonProps {
@@ -9,6 +9,7 @@ export function useAutomaton(): FiniteAutomatonProps {
     const [camera] = useState<Camera>(new Camera(0, 0, 5));
     const [mode, setMode] = useState<Mode>(Mode.INSERT);
     const selected = useRef<State | null>(null);
+    const moveStates = useRef<State[] | undefined>(undefined);
 
     const stateCount = useRef(0);
     const transitionCount = useRef(0);
@@ -246,12 +247,14 @@ export function useAutomaton(): FiniteAutomatonProps {
         ctx.restore();
     }
 
-    function addState(name: string, x: number, y: number) {
+    function addState(name: string, x: number, y: number, initial = false, final = false) {
         const state: State = {
             id: stateCount.current++,
             name,
             x,
             y,
+            initial,
+            final,
         };
         setStates((prev) => [...prev, state]);
     }
@@ -386,25 +389,66 @@ export function useAutomaton(): FiniteAutomatonProps {
         lastPosRef.current = { x: e.clientX, y: e.clientY };
 
         // Insert states
-        if (mode === Mode.INSERT && e.button === 0) {
+        if (mode === Mode.INSERT && e.button === Click.LEFT) {
             const pos = screenToWorld({x: e.offsetX, y: e.offsetY});
             addState(`q${stateCount.current}`, pos.x, pos.y);
             draw(ctx);
         }
 
-        if (mode === Mode.LINK && e.button === 0) {
+        if (mode === Mode.LINK && e.button === Click.LEFT) {
             selectStateAtClick(e, 5);
         }
 
         // Delete states
-        if (mode === Mode.DELETE && e.button === 0) {
+        if (mode === Mode.DELETE && e.button === Click.LEFT) {
             deleteStateAtClick(e, 5);
         }
 
         // Select states
-        if (mode === Mode.SELECT && e.button === 0) {
-            e.preventDefault();
+        if (mode === Mode.SELECT && e.button === Click.LEFT) {
+            const clickedState = clickedOnState(e.offsetX, e.offsetY);
+            if (clickedState) {
+                moveStates.current = [clickedState];
+            }
         }
+
+        console.log(e.button);
+        if (mode === Mode.SELECT && e.button === Click.RIGHT) {
+            const clickedState = clickedOnState(e.offsetX, e.offsetY);
+            if (clickedState) {
+                console.log("Deve dar a opcao do usuario escolher que o no seja inicial ou final");
+            }
+        }
+    }
+
+    function onMouseMove(e: MouseEvent) {
+        const canvas = document.getElementById("canvas") as HTMLCanvasElement | null;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+        if (!ctx) return;
+
+        const prevPos = lastPosRef.current;
+        const currPos = { x: e.clientX, y: e.clientY };
+
+        if (mode === Mode.SELECT && e.button === Click.LEFT && moveStates.current) {
+            // compute screen delta
+            const dxScreen = currPos.x - prevPos.x;
+            const dyScreen = currPos.y - prevPos.y;
+
+            // convert to world-space
+            const dxWorld = dxScreen / camera.z;
+            const dyWorld = -dyScreen / camera.z; // invert Y if needed
+
+            for (const state of moveStates.current) {
+                state.x += dxWorld;
+                state.y += dyWorld;
+            }
+
+            draw(ctx);
+        }
+
+        // update last position
+        lastPosRef.current = currPos;
     }
 
     function onMouseUp(e: MouseEvent) {
@@ -420,6 +464,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         }
 
         selected.current = null;
+        moveStates.current = undefined;
     }
 
     // Efeito para atualizar o canvas
@@ -435,9 +480,12 @@ export function useAutomaton(): FiniteAutomatonProps {
         // registrar mouse down
         canvas.addEventListener("mousedown", onMouseDown);
         canvas.addEventListener("mouseup", onMouseUp);
+        canvas.addEventListener("mousemove", onMouseMove);
+        canvas.addEventListener("contextmenu", (e) => e.preventDefault());
         return () => {
             canvas.removeEventListener("mousedown", onMouseDown);
             canvas.removeEventListener("mouseup", onMouseUp);
+            canvas.removeEventListener("mousemove", onMouseMove);
         };
     }, [states, transitions, mode]);
 

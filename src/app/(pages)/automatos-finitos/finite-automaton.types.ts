@@ -46,6 +46,8 @@ export interface State {
     name : string;
     x : number;
     y : number;
+    initial: boolean;
+    final: boolean;
 }
 
 export interface Transition {
@@ -61,6 +63,13 @@ export enum Mode {
     INSERT = 'insert',
     DELETE = 'delete',
     LINK = 'link',
+}
+
+export enum Click {
+    LEFT = 0,    // MouseEvent.button === 0
+    MIDDLE = 1,  // MouseEvent.button === 1 (wheel)
+    RIGHT = 2,   // MouseEvent.button === 2
+    DOUBLE = 3,  // Custom value for double click (MouseEvent.detail === 2)
 }
 
 export interface Point {
