@@ -6,7 +6,6 @@ import { Toolbar } from "./components/toolbar";
 export function FiniteAutomatonLayout({
     states,
     transitions,
-    camera,
     mode,
     setMode,
     addState,

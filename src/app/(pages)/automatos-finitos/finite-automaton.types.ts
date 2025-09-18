@@ -55,6 +55,8 @@ export interface Transition {
     origin : State;
     destination : State;
     value : string;
+    x: number;
+    y: number;
 }
 
 export enum Mode {

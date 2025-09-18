@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { MouseButton, MouseButtons, FiniteAutomatonProps } from "./finite-automaton.types";
 import { Camera, CanvasSize, State, Transition, Mode, Point } from "./finite-automaton.types";
-import { radius, arrowHeadSize, foregroundColor, backgroundColor, zoomFactor } from "./finite-automaton.constants";
+import { radius, arrowHeadSize, foregroundColor, backgroundColor, fontSize} from "./finite-automaton.constants";
 
 export function useAutomaton(): FiniteAutomatonProps {
     const [states, setStates] = useState<State[]>([]);
     const [transitions, setTransitions] = useState<Transition[]>([]);
     const [canvasSize, setCanvasSize] = useState<CanvasSize>({ width: 800, height: 600 });
-    const [camera] = useState<Camera>(new Camera(0, 0, 5));
     const [mode, setMode] = useState<Mode>(Mode.INSERT);
     const selected = useRef<State | null>(null);
     const moveStates = useRef<State[] | undefined>(undefined);
@@ -16,8 +15,21 @@ export function useAutomaton(): FiniteAutomatonProps {
     const transitionCount = useRef(0);
 
     const lastPosRef = useRef({ x: 0, y: 0 });
-    const cameraRef = useRef(camera);
+    const cameraRef = useRef<Camera>(new Camera(0, 0, 5));
 
+
+    function drawHitBox(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+
+        for (const t of transitions) {
+            ctx.strokeStyle = foregroundColor;
+
+            const side = fontSize;
+            ctx.strokeRect(t.x - side / 2, t.y - side / 2, side, side);
+        }
+
+        ctx.restore();
+    }
 
     function drawBackground(ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = backgroundColor;
@@ -87,7 +99,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         ctx.scale(1, -1);
 
         ctx.fillStyle = fgColor; // text color
-        ctx.font = '3px Arial';
+        ctx.font = `${fontSize}px Arial`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(state.name, state.x, -state.y);
@@ -101,17 +113,15 @@ export function useAutomaton(): FiniteAutomatonProps {
         destination: State,
         fgColor: string,
     ) {
-        const values = transitions
+        const transitionsOriginDest = transitions
         .filter(t => t.origin === origin && t.destination === destination)
-        .map(t => t.value)
-        .sort();
+        .sort((a, b) => a.value.localeCompare(b.value));
 
-        if (values.length === 0) return;
+        if (transitionsOriginDest.length === 0) return;
 
-        const reverseValues = transitions
+        const transitionsDestOrigin = transitions
         .filter(t => t.origin === destination && t.destination === origin)
-        .map(t => t.value)
-        .sort();
+        .sort((a, b) => a.value.localeCompare(b.value));
 
         const midPoint = {
             x: (origin.x + destination.x) / 2,
@@ -125,10 +135,10 @@ export function useAutomaton(): FiniteAutomatonProps {
         const lineVector = { x: dx / norm, y: dy / norm };
         const perpVector = { x: -lineVector.y, y: lineVector.x };
 
-        const spacing = 14 / camera.z; // pixels between stacked labels
+        const spacing = fontSize * 1.1;
 
         // Single arrow case
-        if (reverseValues.length === 0) {
+        if (transitionsDestOrigin.length === 0) {
             ctx.save();
             ctx.strokeStyle = fgColor;
 
@@ -142,18 +152,22 @@ export function useAutomaton(): FiniteAutomatonProps {
 
             ctx.scale(1, -1); // reset to screen space
 
-            ctx.font = "3px Arial";
+            ctx.font = `${fontSize}px Arial`;
             ctx.fillStyle = fgColor;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
             let i = 1;
-            for (const v of values) {
+            for (const v of transitionsOriginDest) {
                 const pos = {
                     x: midPoint.x + perpVector.x * spacing * i,
                     y: midPoint.y + perpVector.y * spacing * i
                 };
-                ctx.fillText(v, pos.x, -pos.y);
+                // Bookkeeping x, y of value
+                v.x = pos.x;
+                v.y = pos.y;
+
+                ctx.fillText(v.value, pos.x, -pos.y);
                 i++;
             }
 
@@ -191,28 +205,36 @@ export function useAutomaton(): FiniteAutomatonProps {
             ctx.save();
             ctx.scale(1, -1);
 
-            ctx.font = "3px Arial";
+            ctx.font = `${fontSize}px Arial`;
             ctx.fillStyle = fgColor;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
             let i = 0;
-            for (const v of values) {
+            for (const v of transitionsOriginDest) {
                 const pos = {
                     x: cp1.x + perpVector.x * spacing * i,
                     y: cp1.y + perpVector.y * spacing * i,
                 };
-                ctx.fillText(v, pos.x, -pos.y);
+                // Bookkeeping x, y of value
+                v.x = pos.x;
+                v.y = pos.y;
+
+                ctx.fillText(v.value, pos.x, -pos.y);
                 i++;
             }
 
             i = 0;
-            for (const v of reverseValues) {
+            for (const v of transitionsDestOrigin) {
                 const pos = {
                     x: cp2.x + perpVector.x * spacing * i,
                     y: cp2.y + perpVector.y * spacing * i,
                 };
-                ctx.fillText(v, pos.x, -pos.y);
+                // Bookkeeping x, y of value
+                v.x = pos.x;
+                v.y = pos.y;
+
+                ctx.fillText(v.value, pos.x, -pos.y);
                 i--;
             }
 
@@ -254,6 +276,8 @@ export function useAutomaton(): FiniteAutomatonProps {
             drawState(ctx, state, backgroundColor, foregroundColor);
         }
 
+        //drawHitBox(ctx);
+
         ctx.restore();
     }
 
@@ -275,6 +299,8 @@ export function useAutomaton(): FiniteAutomatonProps {
             origin,
             destination,
             value,
+            x: 0,
+            y: 0
         };
         setTransitions((prev) => [...prev, transition]);
     }
@@ -298,8 +324,8 @@ export function useAutomaton(): FiniteAutomatonProps {
 
     function worldToScreen(p: Point): Point {
         return {
-            x: canvasSize.width / 2 + (p.x - camera.x) * camera.z,
-            y: canvasSize.height / 2 - (p.y - camera.y) * camera.z, // flip Y
+            x: canvasSize.width / 2 + (p.x - cameraRef.current.x) * cameraRef.current.z,
+            y: canvasSize.height / 2 - (p.y - cameraRef.current.y) * cameraRef.current.z, // flip Y
         };
     }
 
@@ -336,6 +362,27 @@ export function useAutomaton(): FiniteAutomatonProps {
         return clickedState;
     }
 
+    function clickedOnTransition(x: number, y: number): Transition | undefined {
+        // convert screen coords to world coords
+        const pos = screenToWorld({x, y});
+
+        const side = fontSize;
+        const halfSide = side / 2;
+
+        for (const t of transitions) {
+            if (
+                pos.x >= t.x - halfSide &&
+                    pos.x <= t.x + halfSide &&
+                    pos.y >= t.y - halfSide &&
+                    pos.y <= t.y + halfSide
+            ) {
+                return t;
+            }
+        }
+
+        return undefined;
+    }
+
     function deleteStateAtClick(
         e: MouseEvent,
     ) {
@@ -348,6 +395,22 @@ export function useAutomaton(): FiniteAutomatonProps {
 
         if (clickedState) {
             removeState(clickedState); // remove from states and associated transitions
+            draw(ctx); // redraw canvas
+        }
+    }
+
+    function deleteTransitionAtClick(
+        e: MouseEvent,
+    ) {
+        const canvas = e.currentTarget as HTMLCanvasElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const clickedTransition = clickedOnTransition(e.offsetX, e.offsetY);
+
+        if (clickedTransition) {
+            removeTransition(clickedTransition); // remove from states and associated transitions
             draw(ctx); // redraw canvas
         }
     }
@@ -409,6 +472,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         // Delete states
         if (mode === Mode.DELETE && e.button === MouseButton.LEFT) {
             deleteStateAtClick(e);
+            deleteTransitionAtClick(e);
         }
 
         // Select states
@@ -466,8 +530,8 @@ export function useAutomaton(): FiniteAutomatonProps {
             const dyScreen = currPos.y - prevPos.y;
 
             // convert to world-space
-            const dxWorld = dxScreen / camera.z;
-            const dyWorld = -dyScreen / camera.z; // invert Y if needed
+            const dxWorld = dxScreen / cameraRef.current.z;
+            const dyWorld = -dyScreen / cameraRef.current.z; // invert Y if needed
 
             for (const state of moveStates.current) {
                 state.x += dxWorld;
@@ -486,8 +550,8 @@ export function useAutomaton(): FiniteAutomatonProps {
             const dy = curr.y - prev.y;
 
             // adjust camera position in world space
-            camera.x -= dx / camera.z;
-            camera.y += dy / camera.z; // note Y is inverted (canvas has flipped Y)
+            cameraRef.current.x -= dx / cameraRef.current.z;
+            cameraRef.current.y += dy / cameraRef.current.z; // note Y is inverted (canvas has flipped Y)
 
             draw(ctx);
 
@@ -528,13 +592,13 @@ export function useAutomaton(): FiniteAutomatonProps {
 
         // compute mouse position in world coordinates
         const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-        const mouseWorldX = camera.x + (e.clientX - rect.left - canvasSize.width / 2) / camera.z;
-        const mouseWorldY = camera.y - (e.clientY - rect.top - canvasSize.height / 2) / camera.z;
+        const mouseWorldX = cameraRef.current.x + (e.clientX - rect.left - canvasSize.width / 2) / cameraRef.current.z;
+        const mouseWorldY = cameraRef.current.y - (e.clientY - rect.top - canvasSize.height / 2) / cameraRef.current.z;
 
         // apply zoom towards mouse position
-        camera.z *= zoomFactor;
-        camera.x = mouseWorldX - (e.clientX - rect.left - canvasSize.width / 2) / camera.z;
-        camera.y = mouseWorldY + (e.clientY - rect.top - canvasSize.height / 2) / camera.z;
+        cameraRef.current.z *= zoomFactor;
+        cameraRef.current.x = mouseWorldX - (e.clientX - rect.left - canvasSize.width / 2) / cameraRef.current.z;
+        cameraRef.current.y = mouseWorldY + (e.clientY - rect.top - canvasSize.height / 2) / cameraRef.current.z;
 
         draw(ctx); // redraw after zoom
     }
@@ -566,7 +630,6 @@ export function useAutomaton(): FiniteAutomatonProps {
     return {
         states,
         transitions,
-        camera,
         mode,
         setMode,
         addState,
