@@ -16,6 +16,7 @@ export default function Navbar() {
           <NavbarLink href={AppRoutes.HOME}>Home</NavbarLink>
           <NavbarLink href={AppRoutes.TESTE_REGEX}>Teste Regex</NavbarLink>
           <NavbarLink href={AppRoutes.GRAMATICA_REGULAR}>Gramática Regular</NavbarLink>
+          <NavbarLink href={AppRoutes.AUTOMATO_FINITO}>Autômato Finito</NavbarLink>
         </ul>
       </nav>
     )
