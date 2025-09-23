@@ -21,12 +21,13 @@ function NavbarLink({ href, children }: { href: string; children: React.ReactNod
 
 export default function Navbar() {
     return (
-        <nav className="sticky top-0 left-0 right-0 bg-brand-1000 text-white py-4 shadow-md">
-            <ul className="flex space-x-6 justify-center text-[clamp(1rem,calc(0.5rem+0.5vw),3rem)]">
-                <NavbarLink href={AppRoutes.HOME}>Home</NavbarLink>
-                <NavbarLink href={AppRoutes.TESTE_REGEX}>Teste Regex</NavbarLink>
-                <NavbarLink href={AppRoutes.GRAMATICA_REGULAR}>Gramática Regular</NavbarLink>
-            </ul>
-        </nav>
+        <nav className="bg-brand-1000 text-white py-4 shadow-md">
+        <ul className="flex space-x-6 justify-center">
+          <NavbarLink href={AppRoutes.HOME}>Home</NavbarLink>
+          <NavbarLink href={AppRoutes.TESTE_REGEX}>Teste Regex</NavbarLink>
+          <NavbarLink href={AppRoutes.GRAMATICA_REGULAR}>Gramática Regular</NavbarLink>
+          <NavbarLink href={AppRoutes.AUTOMATO_FINITO}>Autômato Finito</NavbarLink>
+        </ul>
+      </nav>
     )
 }
