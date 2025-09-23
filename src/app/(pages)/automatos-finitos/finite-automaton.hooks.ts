@@ -15,8 +15,33 @@ export function useAutomaton(): FiniteAutomatonProps {
     const transitionCount = useRef(0);
 
     const lastPosRef = useRef({ x: 0, y: 0 });
+    const currPosRef = useRef({ x: 0, y: 0 });
+
     const cameraRef = useRef<Camera>(new Camera(0, 0, 5));
 
+    function drawTempTransition(ctx: CanvasRenderingContext2D, color: string) {
+        if(!selected.current) return;
+
+        const start = {
+            x: selected.current?.x,
+            y: selected.current?.y
+        };
+
+        const end = screenToWorld(currPosRef.current);
+
+        ctx.save();
+        
+        ctx.strokeStyle = color;
+
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+
+        drawArrowHead(ctx, start, end);
+
+        ctx.restore();
+    }
 
     function drawHitBox(ctx: CanvasRenderingContext2D) {
         ctx.save();
@@ -374,6 +399,8 @@ export function useAutomaton(): FiniteAutomatonProps {
         // Background
         drawBackground(ctx);
 
+        drawTempTransition(ctx, "#FF0000");
+
         for (const state of states) {
             drawAutoTransition(ctx, state, foregroundColor);
         }
@@ -560,11 +587,24 @@ export function useAutomaton(): FiniteAutomatonProps {
         const clickedState = clickedOnState(e.offsetX, e.offsetY);
 
         if (clickedState) {
-            const value = prompt("Insira o valor da transição:");
-            if (value && value.trim() !== "") {
-                addTransition(selected.current, clickedState, value.trim());
-                draw(ctx);
+            let value = prompt("Insira o valor da transição:");
+
+            if (value === null) {
+                return;
             }
+
+            if (value.length > 1) {
+                alert("Cadeia da transicao deve ser 1");
+                return;
+            }
+
+            if (value.length === 0) {
+                addTransition(selected.current, clickedState, 'λ');
+            } else {
+                addTransition(selected.current, clickedState, value);
+            }
+
+            draw(ctx);
         }
     }
 
@@ -605,7 +645,7 @@ export function useAutomaton(): FiniteAutomatonProps {
             const clickedState = clickedOnState(e.offsetX, e.offsetY);
             if (clickedState) {
                 const choice = window.prompt(
-                    "Set state type:\n1 = Initial\n2 = Final\n3 = Both\n0 = Normal",
+                    "Escolha o tipo do estado:\n1 = Inicial\n2 = Final\n3 = Ambos\n0 = Normal",
                     "0"
                 );
 
@@ -641,6 +681,11 @@ export function useAutomaton(): FiniteAutomatonProps {
 
         const prevPos = lastPosRef.current;
         const currPos = { x: e.clientX, y: e.clientY };
+
+        if (mode === Mode.LINK && e.buttons === MouseButtons.LEFT && selected.current) {
+            currPosRef.current = { x: e.offsetX, y: e.offsetY };
+            draw(ctx);
+        }
 
         if (mode === Mode.SELECT && e.buttons === MouseButtons.LEFT && moveStates.current) {
             // compute screen delta
@@ -694,6 +739,9 @@ export function useAutomaton(): FiniteAutomatonProps {
 
         selected.current = null;
         moveStates.current = undefined;
+        currPosRef.current = { x: 0, y: 0};
+
+        draw(ctx);
     }
 
     function onWheel(e: WheelEvent) {
