@@ -10,6 +10,7 @@ export interface FiniteAutomatonProps {
     editState: (updated: State) => void;
     editTransition: (updated: Transition) => void;
     validateWord: (word: string) => boolean;
+    draw: (ctx: CanvasRenderingContext2D, highlightState?: State) => void;
 }
 
 export interface ToolbarProps {

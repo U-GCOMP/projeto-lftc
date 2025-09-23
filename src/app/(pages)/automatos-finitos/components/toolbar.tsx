@@ -4,7 +4,7 @@ import { Mode, ToolbarProps } from "../finite-automaton.types"
 
 export function Toolbar({ setMode } : ToolbarProps) {
     return (
-        <section className="flex">
+        <section className="flex gap-1">
             <IconAppButton
                 onClick={() => setMode(Mode.SELECT)}
                 icon={cursorIcon}

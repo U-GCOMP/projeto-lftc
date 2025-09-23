@@ -43,6 +43,30 @@ export function useAutomaton(): FiniteAutomatonProps {
         ctx.restore();
     }
 
+    function getStepSequence(word: string): State[] {
+        const initial = states.find(s => s.initial);
+        if (!initial) return [];
+
+        const sequence = [initial];
+        let currentStates = [initial];
+
+        for (const symbol of word) {
+            const nextStates: State[] = [];
+            for (const cs of currentStates) {
+                const outgoing = transitions.filter(t => t.origin.id === cs.id && t.value === symbol);
+                for (const t of outgoing) nextStates.push(t.destination);
+            }
+
+            if (nextStates.length === 0) break;
+            // assume DFA, apenas pega o primeiro
+            currentStates = [nextStates[0]];
+            sequence.push(nextStates[0]);
+        }
+
+        return sequence;
+    }
+
+
     function drawHitBox(ctx: CanvasRenderingContext2D) {
         ctx.save();
 
@@ -379,9 +403,10 @@ export function useAutomaton(): FiniteAutomatonProps {
         }
     }
 
-    function draw(ctx: CanvasRenderingContext2D) {
+    function draw(ctx: CanvasRenderingContext2D, highlightState?: State) {
         const { width, height } = canvasSize;
 
+        // Limpa o canvas
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, width, height);
@@ -389,42 +414,44 @@ export function useAutomaton(): FiniteAutomatonProps {
 
         ctx.save();
 
-        // Camera transform
+        // Transformação da câmera
         ctx.translate(width / 2, height / 2);
         ctx.scale(1, -1);
         ctx.scale(cameraRef.current.z, cameraRef.current.z);
         ctx.translate(-cameraRef.current.x, -cameraRef.current.y);
         ctx.lineWidth = 0.2;
 
-        // Background
+        // Fundo
         drawBackground(ctx);
 
+        // Desenhar transição temporária (durante link)
         drawTempTransition(ctx, "#FF0000");
 
+        // Auto-transições (loops) ficam atrás
         for (const state of states) {
             drawAutoTransition(ctx, state, foregroundColor);
         }
 
+        // Transições normais
         const seen = new Set<string>();
         for (const t of transitions) {
             if (t.origin === t.destination) continue;
-
             const key = `${t.origin.id}-${t.destination.id}`;
-
             if (!seen.has(key)) {
                 seen.add(key);
                 drawTransition(ctx, t.origin, t.destination, foregroundColor);
             }
         }
 
+        // Desenhar estados (destacando o highlightState)
         for (const state of states) {
-            drawState(ctx, state, backgroundColor, foregroundColor);
+            const bg = state === highlightState ? "#ffd700" : backgroundColor;
+            drawState(ctx, state, bg, foregroundColor);
         }
-
-        //drawHitBox(ctx);
 
         ctx.restore();
     }
+
 
     function addState(name: string, x: number, y: number, initial = false, final = false) {
         const state: State = {
@@ -792,5 +819,6 @@ export function useAutomaton(): FiniteAutomatonProps {
         editState,
         editTransition,
         validateWord,
+        draw,
     };
 }
