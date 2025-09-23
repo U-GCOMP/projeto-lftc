@@ -60,14 +60,25 @@ export function useAutomaton(): FiniteAutomatonProps {
         ctx.fillRect(-1000, -1000, 2000, 2000);
     }
 
+    function shiftedPoint(from: Point, to: Point, shift: number): Point {
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const norm = Math.hypot(dx, dy);
+        return {
+            x: to.x - (dx / norm) * shift,
+            y: to.y - (dy / norm) * shift
+        };
+    }
+
+
     function drawArrowHead(ctx: CanvasRenderingContext2D, from: Point, to: Point) {
         const dx = to.x - from.x;
         const dy = to.y - from.y;
         const angle = Math.atan2(dy, dx);
 
-        // shift endpoint backward along the line by radius
-        const endX = to.x - radius * Math.cos(angle);
-        const endY = to.y - radius * Math.sin(angle);
+        // use endpoint directly (ignore radius)
+        const endX = to.x;
+        const endY = to.y;
 
         ctx.beginPath();
         ctx.moveTo(endX, endY);
@@ -89,6 +100,8 @@ export function useAutomaton(): FiniteAutomatonProps {
         bgColor: string,
         fgColor: string,
     ) {
+        ctx.save();
+
         // circle in world coords (uses current transformed ctx)
         ctx.fillStyle = bgColor;
         ctx.strokeStyle = fgColor;
@@ -116,9 +129,6 @@ export function useAutomaton(): FiniteAutomatonProps {
             ctx.fill();
             ctx.stroke();
         }
-
-        // draw name upright in screen coordinates
-        ctx.save();
         // reset transform to identity (draw in pixel space)
         ctx.scale(1, -1);
 
@@ -131,6 +141,77 @@ export function useAutomaton(): FiniteAutomatonProps {
         ctx.restore();
     }
 
+    function drawAutoTransition(
+        ctx: CanvasRenderingContext2D,
+        state: State,
+        fgColor: string
+    ) {
+        const spacing = fontSize * 1.1;
+
+        const autoTransitions = transitions
+        .filter(t => t.origin === state && t.destination === state)
+        .sort((a, b) => a.value.localeCompare(b.value));
+
+        if (autoTransitions.length === 0) return;
+        ctx.save();
+
+        ctx.strokeStyle = fgColor;
+
+        const sin30 = 1/2;
+        const cos30 = Math.sqrt(3) / 2;
+
+        const loopOffset = radius * 5; // adjust factor as needed
+        const cp = {
+            x: state.x,
+            y: state.y + loopOffset,
+        };
+
+        const start = {
+            x: state.x + radius * cos30,
+            y: state.y + radius * sin30
+        };
+
+        const end = {
+            x: state.x - radius * cos30,
+            y: state.y + radius * sin30
+        };
+
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.quadraticCurveTo(cp.x, cp.y, end.x, end.y);
+        ctx.stroke();
+        drawArrowHead(ctx, cp, end);
+
+        ctx.save();
+        ctx.scale(1, -1);
+
+        ctx.font = `${fontSize}px Arial`;
+        ctx.fillStyle = fgColor;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        let i = 0;
+        for (const v of autoTransitions) {
+            // Position slightly above the control point, with stacking
+            const pos = {
+                x: cp.x,
+                y: cp.y + spacing * i
+            };
+
+            // Bookkeeping
+            v.x = pos.x;
+            v.y = pos.y;
+
+            ctx.fillText(v.value, pos.x, -pos.y);
+            i++;
+        }
+
+        ctx.restore();
+
+        ctx.restore();
+
+    }
+
     function drawTransition(
         ctx: CanvasRenderingContext2D,
         origin: State,
@@ -138,13 +219,13 @@ export function useAutomaton(): FiniteAutomatonProps {
         fgColor: string,
     ) {
         const transitionsOriginDest = transitions
-        .filter(t => t.origin === origin && t.destination === destination)
+        .filter(t => t.origin === origin && t.destination === destination && t.origin !== t.destination)
         .sort((a, b) => a.value.localeCompare(b.value));
 
         if (transitionsOriginDest.length === 0) return;
 
         const transitionsDestOrigin = transitions
-        .filter(t => t.origin === destination && t.destination === origin)
+        .filter(t => t.origin === destination && t.destination === origin && t.origin !== t.destination)
         .sort((a, b) => a.value.localeCompare(b.value));
 
         const midPoint = {
@@ -172,7 +253,9 @@ export function useAutomaton(): FiniteAutomatonProps {
             ctx.lineTo(destination.x, destination.y);
             ctx.stroke();
 
-            drawArrowHead(ctx, origin, destination);
+            const end = shiftedPoint(origin, destination, radius);
+
+            drawArrowHead(ctx, origin, end);
 
             ctx.scale(1, -1); // reset to screen space
 
@@ -216,14 +299,18 @@ export function useAutomaton(): FiniteAutomatonProps {
             ctx.moveTo(origin.x, origin.y);
             ctx.quadraticCurveTo(cp1.x, cp1.y, destination.x, destination.y);
             ctx.stroke();
-            drawArrowHead(ctx, cp1, destination);
+
+            const end1 = shiftedPoint(cp1, destination, radius);
+            drawArrowHead(ctx, cp1, end1);
 
             // Second curve (reverse)
             ctx.beginPath();
             ctx.moveTo(destination.x, destination.y);
             ctx.quadraticCurveTo(cp2.x, cp2.y, origin.x, origin.y);
             ctx.stroke();
-            drawArrowHead(ctx, cp2, origin);
+
+            const end2 = shiftedPoint(cp2, origin, radius);
+            drawArrowHead(ctx, cp2, end2);
 
             // Draw stacked labels
             ctx.save();
@@ -287,9 +374,16 @@ export function useAutomaton(): FiniteAutomatonProps {
         // Background
         drawBackground(ctx);
 
+        for (const state of states) {
+            drawAutoTransition(ctx, state, foregroundColor);
+        }
+
         const seen = new Set<string>();
         for (const t of transitions) {
+            if (t.origin === t.destination) continue;
+
             const key = `${t.origin.id}-${t.destination.id}`;
+
             if (!seen.has(key)) {
                 seen.add(key);
                 drawTransition(ctx, t.origin, t.destination, foregroundColor);
