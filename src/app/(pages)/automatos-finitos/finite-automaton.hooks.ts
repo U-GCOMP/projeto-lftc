@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { MouseButton, MouseButtons, FiniteAutomatonProps } from "./finite-automaton.types";
 import { Camera, CanvasSize, State, Transition, Mode, Point } from "./finite-automaton.types";
 import { radius, arrowHeadSize, foregroundColor, backgroundColor, fontSize} from "./finite-automaton.constants";
@@ -19,68 +19,7 @@ export function useAutomaton(): FiniteAutomatonProps {
 
     const cameraRef = useRef<Camera>(new Camera(0, 0, 5));
 
-    function drawTempTransition(ctx: CanvasRenderingContext2D, color: string) {
-        if(!selected.current) return;
-
-        const start = {
-            x: selected.current?.x,
-            y: selected.current?.y
-        };
-
-        const end = screenToWorld(currPosRef.current);
-
-        ctx.save();
-        
-        ctx.strokeStyle = color;
-
-        ctx.beginPath();
-        ctx.moveTo(start.x, start.y);
-        ctx.lineTo(end.x, end.y);
-        ctx.stroke();
-
-        drawArrowHead(ctx, start, end);
-
-        ctx.restore();
-    }
-
-    function getStepSequence(word: string): State[] {
-        const initial = states.find(s => s.initial);
-        if (!initial) return [];
-
-        const sequence = [initial];
-        let currentStates = [initial];
-
-        for (const symbol of word) {
-            const nextStates: State[] = [];
-            for (const cs of currentStates) {
-                const outgoing = transitions.filter(t => t.origin.id === cs.id && t.value === symbol);
-                for (const t of outgoing) nextStates.push(t.destination);
-            }
-
-            if (nextStates.length === 0) break;
-            // assume DFA, apenas pega o primeiro
-            currentStates = [nextStates[0]];
-            sequence.push(nextStates[0]);
-        }
-
-        return sequence;
-    }
-
-
-    function drawHitBox(ctx: CanvasRenderingContext2D) {
-        ctx.save();
-
-        for (const t of transitions) {
-            ctx.strokeStyle = foregroundColor;
-
-            const side = fontSize;
-            ctx.strokeRect(t.x - side / 2, t.y - side / 2, side, side);
-        }
-
-        ctx.restore();
-    }
-
-    function validateWord(word: string): boolean {
+    const validateWord = useCallback((word: string): boolean => {
         const initial = states.find((s) => s.initial);
         if (!initial) return false;
 
@@ -101,15 +40,14 @@ export function useAutomaton(): FiniteAutomatonProps {
         }
 
         return currentStates.some((s) => s.final);
-    }
+    }, [states, transitions]);
 
-
-    function drawBackground(ctx: CanvasRenderingContext2D) {
+    const drawBackground = useCallback((ctx: CanvasRenderingContext2D) => {
         ctx.fillStyle = backgroundColor;
         ctx.fillRect(-1000, -1000, 2000, 2000);
-    }
+    }, []);
 
-    function shiftedPoint(from: Point, to: Point, shift: number): Point {
+    const shiftedPoint = useCallback((from: Point, to: Point, shift: number): Point => {
         const dx = to.x - from.x;
         const dy = to.y - from.y;
         const norm = Math.hypot(dx, dy);
@@ -117,10 +55,9 @@ export function useAutomaton(): FiniteAutomatonProps {
             x: to.x - (dx / norm) * shift,
             y: to.y - (dy / norm) * shift
         };
-    }
+    }, []);
 
-
-    function drawArrowHead(ctx: CanvasRenderingContext2D, from: Point, to: Point) {
+    const drawArrowHead = useCallback((ctx: CanvasRenderingContext2D, from: Point, to: Point) => {
         const dx = to.x - from.x;
         const dy = to.y - from.y;
         const angle = Math.atan2(dy, dx);
@@ -141,14 +78,14 @@ export function useAutomaton(): FiniteAutomatonProps {
             endY - arrowHeadSize * Math.sin(angle + Math.PI / 6)
         );
         ctx.stroke();
-    }
+    }, []);
 
-    function drawState(
+    const drawState = useCallback((
         ctx: CanvasRenderingContext2D,
         state: State,
         bgColor: string,
         fgColor: string,
-    ) {
+    ) => {
         ctx.save();
 
         // circle in world coords (uses current transformed ctx)
@@ -188,13 +125,14 @@ export function useAutomaton(): FiniteAutomatonProps {
         ctx.fillText(state.name, state.x, -state.y);
 
         ctx.restore();
-    }
+    }, []);
+    
 
-    function drawAutoTransition(
+    const drawAutoTransition = useCallback((
         ctx: CanvasRenderingContext2D,
         state: State,
         fgColor: string
-    ) {
+    ) => {
         const spacing = fontSize * 1.1;
 
         const autoTransitions = transitions
@@ -259,14 +197,14 @@ export function useAutomaton(): FiniteAutomatonProps {
 
         ctx.restore();
 
-    }
+    }, [transitions, drawArrowHead]);
 
-    function drawTransition(
+    const drawTransition = useCallback((
         ctx: CanvasRenderingContext2D,
         origin: State,
         destination: State,
         fgColor: string,
-    ) {
+    ) => {
         const transitionsOriginDest = transitions
         .filter(t => t.origin === origin && t.destination === destination && t.origin !== t.destination)
         .sort((a, b) => a.value.localeCompare(b.value));
@@ -401,9 +339,95 @@ export function useAutomaton(): FiniteAutomatonProps {
             ctx.restore();
             ctx.restore();
         }
-    }
+    }, [transitions, shiftedPoint, drawArrowHead]);
 
-    function draw(ctx: CanvasRenderingContext2D, highlightState?: State) {
+    const addState = useCallback((name: string, x: number, y: number, initial = false, final = false) => {
+        const state: State = {
+            id: stateCount.current++,
+            name,
+            x,
+            y,
+            initial,
+            final,
+        };
+        setStates((prev) => [...prev, state]);
+    }, []);
+
+    const addTransition = useCallback((origin: State, destination: State, value: string) => {
+        const transition: Transition = {
+            id: transitionCount.current++,
+            origin,
+            destination,
+            value,
+            x: 0,
+            y: 0
+        };
+        setTransitions((prev) => [...prev, transition]);
+    }, []);
+
+    const removeState = useCallback((state: State) => {
+        setStates((prev) => prev.filter((s) => s !== state));
+        setTransitions((prev) => prev.filter((t) => t.origin !== state && t.destination !== state));
+    }, []);
+
+    const removeTransition = useCallback((transition: Transition) => {
+        setTransitions((prev) => prev.filter((t) => t !== transition));
+    }, []);
+
+    const editState = useCallback((updated: State) => {
+        setStates((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    }, []);
+
+    const editTransition = useCallback((updated: Transition) => {
+        setTransitions((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    }, []);
+
+    // Converte coordenadas de clique (pixel) para coordenadas do mundo (com câmera)
+    const screenToWorld = useCallback((p: Point): Point => {
+        const { width, height } = canvasSize;
+        const cam = cameraRef.current;
+
+        // normaliza para centro do canvas
+        let nx = p.x - width / 2;
+        let ny = height / 2 - p.y; // inverte Y porque o canvas é "top-down"
+
+        // aplica zoom
+        nx /= cam.z;
+        ny /= cam.z;
+
+        // aplica offset da câmera
+        nx += cam.x;
+        ny += cam.y;
+
+        return { x: nx, y: ny };
+    }, [canvasSize]);
+    
+    const drawTempTransition = useCallback((ctx: CanvasRenderingContext2D, color: string) => {
+        if(!selected.current) return;
+
+        const start = {
+            x: selected.current?.x,
+            y: selected.current?.y
+        };
+
+        const end = screenToWorld(currPosRef.current);
+
+        ctx.save();
+        
+        ctx.strokeStyle = color;
+
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+
+        drawArrowHead(ctx, start, end);
+
+        ctx.restore();
+    }, [drawArrowHead, screenToWorld]);
+
+    
+    const draw = useCallback((ctx: CanvasRenderingContext2D, highlightState?: State) => {
         const { width, height } = canvasSize;
 
         // Limpa o canvas
@@ -450,71 +474,10 @@ export function useAutomaton(): FiniteAutomatonProps {
         }
 
         ctx.restore();
-    }
+    }, [canvasSize, states, transitions, drawBackground, drawTempTransition, drawAutoTransition, drawTransition, drawState]);
 
 
-    function addState(name: string, x: number, y: number, initial = false, final = false) {
-        const state: State = {
-            id: stateCount.current++,
-            name,
-            x,
-            y,
-            initial,
-            final,
-        };
-        setStates((prev) => [...prev, state]);
-    }
-
-    function addTransition(origin: State, destination: State, value: string) {
-        const transition: Transition = {
-            id: transitionCount.current++,
-            origin,
-            destination,
-            value,
-            x: 0,
-            y: 0
-        };
-        setTransitions((prev) => [...prev, transition]);
-    }
-
-    function removeState(state: State) {
-        setStates((prev) => prev.filter((s) => s !== state));
-        setTransitions((prev) => prev.filter((t) => t.origin !== state && t.destination !== state));
-    }
-
-    function removeTransition(transition: Transition) {
-        setTransitions((prev) => prev.filter((t) => t !== transition));
-    }
-
-    function editState(updated: State) {
-        setStates((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-    }
-
-    function editTransition(updated: Transition) {
-        setTransitions((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-    }
-
-    // Converte coordenadas de clique (pixel) para coordenadas do mundo (com câmera)
-    function screenToWorld(p: Point): Point {
-        const { width, height } = canvasSize;
-        const cam = cameraRef.current;
-
-        // normaliza para centro do canvas
-        let nx = p.x - width / 2;
-        let ny = height / 2 - p.y; // inverte Y porque o canvas é "top-down"
-
-        // aplica zoom
-        nx /= cam.z;
-        ny /= cam.z;
-
-        // aplica offset da câmera
-        nx += cam.x;
-        ny += cam.y;
-
-        return { x: nx, y: ny };
-    }
-
-    function clickedOnState(x: number, y: number) : State | undefined{
+    const clickedOnState = useCallback((x: number, y: number): State | undefined => {
         // convert screen coords to world coords
         const pos = screenToWorld({x, y});
 
@@ -524,9 +487,9 @@ export function useAutomaton(): FiniteAutomatonProps {
         );
 
         return clickedState;
-    }
+    }, [states, screenToWorld]);
 
-    function clickedOnTransition(x: number, y: number): Transition | undefined {
+    const clickedOnTransition = useCallback((x: number, y: number): Transition | undefined => {
         // convert screen coords to world coords
         const pos = screenToWorld({x, y});
 
@@ -545,11 +508,11 @@ export function useAutomaton(): FiniteAutomatonProps {
         }
 
         return undefined;
-    }
+    }, [transitions, screenToWorld]);
 
-    function deleteStateAtClick(
+    const deleteStateAtClick = useCallback((
         e: MouseEvent,
-    ) {
+    ) => {
         const canvas = e.currentTarget as HTMLCanvasElement;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
@@ -561,11 +524,11 @@ export function useAutomaton(): FiniteAutomatonProps {
             removeState(clickedState); // remove from states and associated transitions
             draw(ctx); // redraw canvas
         }
-    }
+    }, [clickedOnState, removeState, draw]);
 
-    function deleteTransitionAtClick(
+    const deleteTransitionAtClick = useCallback((
         e: MouseEvent,
-    ) {
+    ) => {
         const canvas = e.currentTarget as HTMLCanvasElement;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
@@ -577,11 +540,11 @@ export function useAutomaton(): FiniteAutomatonProps {
             removeTransition(clickedTransition); // remove from states and associated transitions
             draw(ctx); // redraw canvas
         }
-    }
+    }, [clickedOnTransition, removeTransition, draw]);
 
-    function selectStateAtClick(
+    const selectStateAtClick = useCallback((
         e: MouseEvent,
-    ) {
+    ) => {
         const canvas = e.currentTarget as HTMLCanvasElement;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
@@ -592,9 +555,9 @@ export function useAutomaton(): FiniteAutomatonProps {
         if (clickedState) {
             selected.current = clickedState;
         }
-    }
+    }, [clickedOnState]);
 
-    function linkStateAtUp(e: MouseEvent) {
+    const linkStateAtUp = useCallback((e: MouseEvent) => {
         if (!selected.current) return;
 
         const canvas = e.currentTarget as HTMLCanvasElement;
@@ -606,7 +569,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         const clickedState = clickedOnState(e.offsetX, e.offsetY);
 
         if (clickedState) {
-            let value = prompt("Insira o valor da transição:");
+            const value = prompt("Insira o valor da transição:");
 
             if (value === null) {
                 return;
@@ -625,9 +588,9 @@ export function useAutomaton(): FiniteAutomatonProps {
 
             draw(ctx);
         }
-    }
+    }, [clickedOnState, addTransition, draw]);
 
-    function onMouseDown(e: MouseEvent) {
+    const onMouseDown = useCallback((e: MouseEvent) => {
         const canvas = document.getElementById("canvas") as HTMLCanvasElement | null;
         if (!canvas) return;
         const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -690,9 +653,9 @@ export function useAutomaton(): FiniteAutomatonProps {
                 draw(ctx); // re-render canvas}
             }
         }
-    }
+    }, [mode, screenToWorld, addState, draw, selectStateAtClick, deleteStateAtClick, deleteTransitionAtClick, clickedOnState]);
 
-    function onMouseMove(e: MouseEvent) {
+    const onMouseMove = useCallback((e: MouseEvent) => {
         const canvas = document.getElementById("canvas") as HTMLCanvasElement | null;
         if (!canvas) return;
         const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -737,9 +700,9 @@ export function useAutomaton(): FiniteAutomatonProps {
 
         // update last position
         lastPosRef.current = currPos;
-    }
+    }, [mode, draw]);
 
-    function onMouseUp(e: MouseEvent) {
+    const onMouseUp = useCallback((e: MouseEvent) => {
         const canvas = document.getElementById("canvas") as HTMLCanvasElement | null;
         if (!canvas) return;
         const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -756,9 +719,9 @@ export function useAutomaton(): FiniteAutomatonProps {
         currPosRef.current = { x: 0, y: 0};
 
         draw(ctx);
-    }
+    }, [mode, linkStateAtUp, draw]);
 
-    function onWheel(e: WheelEvent) {
+    const onWheel = useCallback((e: WheelEvent) => {
         e.preventDefault(); // prevent page scrolling
 
         const canvas = document.getElementById("canvas") as HTMLCanvasElement | null;
@@ -781,7 +744,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         cameraRef.current.y = mouseWorldY + (e.clientY - rect.top - canvasSize.height / 2) / cameraRef.current.z;
 
         draw(ctx); // redraw after zoom
-    }
+    }, [canvasSize, draw]);
 
     // Efeito para atualizar o canvas
     useEffect(() => {
@@ -805,6 +768,7 @@ export function useAutomaton(): FiniteAutomatonProps {
             canvas.removeEventListener("mousemove", onMouseMove);
             canvas.removeEventListener("wheel", onWheel);
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [states, transitions, mode]);
 
     return {
