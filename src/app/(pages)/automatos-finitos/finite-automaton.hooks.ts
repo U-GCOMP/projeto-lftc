@@ -467,14 +467,6 @@ export function useAutomaton(): FiniteAutomatonProps {
         setTransitions((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     }
 
-    function worldToScreen(p: Point): Point {
-        return {
-            x: canvasSize.width / 2 + (p.x - cameraRef.current.x) * cameraRef.current.z,
-            y: canvasSize.height / 2 - (p.y - cameraRef.current.y) * cameraRef.current.z, // flip Y
-        };
-    }
-
-
     // Converte coordenadas de clique (pixel) para coordenadas do mundo (com câmera)
     function screenToWorld(p: Point): Point {
         const { width, height } = canvasSize;
@@ -614,7 +606,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
         if (!ctx) return;
 
-        lastPosRef.current = { x: e.clientX, y: e.clientY };
+        lastPosRef.current = { x: e.offsetX, y: e.offsetY };
 
         // Insert states
         if (mode === Mode.INSERT && e.button === MouseButton.LEFT) {
@@ -680,10 +672,10 @@ export function useAutomaton(): FiniteAutomatonProps {
         if (!ctx) return;
 
         const prevPos = lastPosRef.current;
-        const currPos = { x: e.clientX, y: e.clientY };
+        const currPos = { x: e.offsetX, y: e.offsetY };
 
         if (mode === Mode.LINK && e.buttons === MouseButtons.LEFT && selected.current) {
-            currPosRef.current = { x: e.offsetX, y: e.offsetY };
+            currPosRef.current = currPos;
             draw(ctx);
         }
 
@@ -705,20 +697,15 @@ export function useAutomaton(): FiniteAutomatonProps {
         }
 
         if (e.buttons === MouseButtons.MIDDLE || (mode === Mode.DRAG && e.buttons === MouseButtons.LEFT)) {
-            const prev = lastPosRef.current;
-            const curr = { x: e.clientX, y: e.clientY };
-
             // screen–space delta
-            const dx = curr.x - prev.x;
-            const dy = curr.y - prev.y;
+            const dx = currPos.x - prevPos.x;
+            const dy = currPos.y - prevPos.y;
 
             // adjust camera position in world space
             cameraRef.current.x -= dx / cameraRef.current.z;
             cameraRef.current.y += dy / cameraRef.current.z; // note Y is inverted (canvas has flipped Y)
 
             draw(ctx);
-
-            lastPosRef.current = curr;
         }
 
         // update last position
@@ -731,7 +718,7 @@ export function useAutomaton(): FiniteAutomatonProps {
         const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
         if (!ctx) return;
 
-        lastPosRef.current = { x: e.clientX, y: e.clientY };
+        lastPosRef.current = { x: e.offsetX, y: e.offsetY };
         
         if (mode === Mode.LINK) {
             linkStateAtUp(e);

@@ -1,7 +1,6 @@
 export interface FiniteAutomatonProps {
     states: State[];
     transitions: Transition[];
-    camera: Camera;
     mode: Mode;
     setMode: (mode: Mode) => void;
     addState: (name: string, x: number, y: number) => void;
