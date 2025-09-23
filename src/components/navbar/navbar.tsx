@@ -1,9 +1,19 @@
+'use client';
+
 import { AppRoutes } from "@/routes";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 function NavbarLink({ href, children }: { href: string; children: React.ReactNode }) {
+    const pathname = usePathname();
+    const isActive = pathname === href;
+
     return (
-        <li className="hover:underline hover:text-accent-default hover:decoration-accent-default">
+        <li className={`
+            relative transition-all duration-200 hover:text-accent-default
+            after:content-[''] after:absolute after:w-0 after:h-[1px] after:bg-accent-default after:bottom-0 after:left-1/2 after:transition-all after:duration-200 hover:after:w-full hover:after:left-0
+            ${isActive ? 'text-accent-default' : ''}
+        `}>
             <Link href={href}>{children}</Link>
         </li>
     )

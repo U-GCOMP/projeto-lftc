@@ -23,4 +23,9 @@ export interface RegularGrammarProps {
     addTestString: () => void;
     removeTestStringAt: (index: number) => void;
     testGrammar: (input: string) => boolean;
+    handleRuleValuePressEnter: (index: number) => void;
+    hintButtonRef: React.RefObject<HTMLButtonElement | null>;
+    hintBoxRef: React.RefObject<HTMLDivElement | null>;
+    isHintModalOpen: boolean;
+    setIsHintModalOpen: (isOpen: boolean) => void;
 }
