@@ -10,6 +10,7 @@ export interface FiniteAutomatonProps {
     removeTransition: (transition: Transition) => void;
     editState: (updated: State) => void;
     editTransition: (updated: Transition) => void;
+    validateWord: (word: string) => boolean;
 }
 
 export interface ToolbarProps {

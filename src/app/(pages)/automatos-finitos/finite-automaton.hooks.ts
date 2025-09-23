@@ -31,6 +31,30 @@ export function useAutomaton(): FiniteAutomatonProps {
         ctx.restore();
     }
 
+    function validateWord(word: string): boolean {
+        const initial = states.find((s) => s.initial);
+        if (!initial) return false;
+
+        let currentStates = [initial];
+
+        for (const symbol of word) {
+            const nextStates: State[] = [];
+
+            for (const cs of currentStates) {
+                const outgoing = transitions.filter((t) => t.origin.id === cs.id && t.value === symbol);
+                for (const t of outgoing) {
+                    nextStates.push(t.destination);
+                }
+            }
+
+            if (nextStates.length === 0) return false;
+            currentStates = nextStates;
+        }
+
+        return currentStates.some((s) => s.final);
+    }
+
+
     function drawBackground(ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = backgroundColor;
         ctx.fillRect(-1000, -1000, 2000, 2000);
@@ -638,5 +662,6 @@ export function useAutomaton(): FiniteAutomatonProps {
         removeTransition,
         editState,
         editTransition,
+        validateWord,
     };
 }
