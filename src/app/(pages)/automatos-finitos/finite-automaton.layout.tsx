@@ -18,7 +18,6 @@ export function FiniteAutomatonLayout({
 
     const [stepIndex, setStepIndex] = useState(0);
     const [stepStates, setStepStates] = useState<State[]>([]);
-    const [isInteractiveStringValid, setIsInteractiveStringValid] = useState<boolean>(true);
 
     const getStepSequence = useCallback((word: string): State[] => {
         const initial = states.find((s) => s.initial);
@@ -45,7 +44,7 @@ export function FiniteAutomatonLayout({
     }, [states, transitions]);
 
     useEffect(() => {
-        setIsInteractiveStringValid(validateWord(input));
+        validateWord(input)
         if (input === "") {
             setStepStates([]);
             setStepIndex(0);
