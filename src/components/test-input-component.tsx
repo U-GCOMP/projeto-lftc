@@ -3,24 +3,24 @@ import { IconAppButton } from "./buttons/icon-app-button";
 import { TextInput } from "./text-input/text-input";
 
 interface TestInputComponentProps {
-    index: number;
+    label: string;
     testString: string;
-    testStringArray: string[];
-    onChangeTestString: (index: number, value: string) => void;
-    removeTestString: (index: number) => void;
+    onChangeTestString: (value: string) => void;
     testStringFunction: (value: string) => boolean;
-    shouldShowDeleteButton?: boolean;
+    id?: string;
+    removeTestString?: () => void;
 }
 
 export function TestInputComponent({
-    index,
+    label,
     testString,
-    testStringArray,
     onChangeTestString,
     removeTestString,
+    id,
     testStringFunction,
-    shouldShowDeleteButton = false
 }: TestInputComponentProps) {
+    const shouldShowDeleteButton = removeTestString !== undefined;
+
     return (
         <div
             className={`
@@ -32,10 +32,10 @@ export function TestInputComponent({
 
             <TextInput
                 className={testStringFunction(testString) ? "bg-regex-success" : "bg-regex-error"}
-                id={`test-string-${index}`}
-                label={`String de Teste ${index + 1}`}
+                id={id}
+                label={label}
                 value={testString}
-                onChange={(value) => onChangeTestString(index, value)}
+                onChange={(value) => onChangeTestString(value)}
                 inputProps={{
                     onFocus: (e) => {
                         e.currentTarget.parentElement?.classList.add("focus-within");
@@ -45,10 +45,10 @@ export function TestInputComponent({
                     },
                 }}
             />
-            {testStringArray.length > 1 && (
+            {shouldShowDeleteButton && (
                 <IconAppButton
                     className="absolute mt-5 right-1 h-[2rem] opacity-0 transition-all duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
-                    onClick={() => removeTestString(index)}
+                    onClick={() => removeTestString?.()}
                     icon={trashIcon}
                     alt="Remover String de Teste"
                 />

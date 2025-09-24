@@ -3,17 +3,12 @@ export interface FiniteAutomatonProps {
     transitions: Transition[];
     mode: Mode;
     setMode: (mode: Mode) => void;
-    addState: (name: string, x: number, y: number) => void;
-    addTransition: (origin: State, destination: State, value: string) => void;
-    removeState: (state: State) => void;
-    removeTransition: (transition: Transition) => void;
-    editState: (updated: State) => void;
-    editTransition: (updated: Transition) => void;
     validateWord: (word: string) => boolean;
     draw: (ctx: CanvasRenderingContext2D, highlightState?: State) => void;
 }
 
 export interface ToolbarProps {
+    mode: Mode;
     setMode: (mode: Mode) => void;
 }
 

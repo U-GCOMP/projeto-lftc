@@ -54,14 +54,13 @@ export function TestStringSection({
                   <section className="flex flex-wrap items-start gap-4 mt-4 w-full mx-auto justify-center-safe">
                     {testStringArray.map((testString, index) => (
                       <TestInputComponent
-                        key={index}
-                        index={index}
+                        key={`test-string-${index}`}
+                        id={`test-string-${index}`}
+                        label={`String de Teste ${index + 1}`}
                         testString={testString}
-                        testStringArray={testStringArray}
-                        onChangeTestString={onChangeTestString}
-                        removeTestString={removeTestString}
+                        onChangeTestString={(value) => onChangeTestString(index, value)}
+                        removeTestString={() => removeTestString(index)}
                         testStringFunction={testStringFunction}
-                        shouldShowDeleteButton={testStringArray.length > 1}
                       />
                     ))}
                   </section>

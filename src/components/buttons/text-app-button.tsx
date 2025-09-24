@@ -3,7 +3,7 @@ import { ButtonHTMLAttributes } from "react"
 interface AppButtonProps {
     text?: string,
     onClick: () => void,
-    buttonProps: ButtonHTMLAttributes<HTMLButtonElement>
+    buttonProps?: ButtonHTMLAttributes<HTMLButtonElement>
     className?: string
 }
 

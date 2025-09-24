@@ -2,41 +2,24 @@ import BaseScreen from "@/components/base-screen/base-screen";
 import DefaultHeader from "@/components/default-header/default-header";
 import { FiniteAutomatonProps, State } from "./finite-automaton.types";
 import { Toolbar } from "./components/toolbar";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import TextAppButton from "@/components/buttons/text-app-button";
+import { TestInputComponent } from "@/components/test-input-component";
 
 export function FiniteAutomatonLayout({
     states,
     transitions,
     mode,
     setMode,
-    addState,
-    addTransition,
-    removeState,
-    removeTransition,
-    editState,
-    editTransition,
     validateWord,
     draw,
 }: FiniteAutomatonProps) {
     const [input, setInput] = useState("");
-    const [result, setResult] = useState<null | boolean>(null);
 
     const [stepIndex, setStepIndex] = useState(0);
     const [stepStates, setStepStates] = useState<State[]>([]);
 
-    useEffect(() => {
-        if (input === "") {
-            setResult(null);
-            setStepStates([]);
-            setStepIndex(0);
-        } else {
-            setResult(validateWord(input));
-            setStepStates(getStepSequence(input));
-            setStepIndex(0);
-        }
-    }, [input, validateWord, states, transitions]);
-
-    function getStepSequence(word: string): State[] {
+    const getStepSequence = useCallback((word: string): State[] => {
         const initial = states.find((s) => s.initial);
         if (!initial) return [];
 
@@ -58,20 +41,30 @@ export function FiniteAutomatonLayout({
         }
 
         return sequence;
-    }
+    }, [states, transitions]);
 
-    function drawCanvas(highlightState?: State) {
+    useEffect(() => {
+        if (input === "") {
+            setStepStates([]);
+            setStepIndex(0);
+        } else {
+            setStepStates(getStepSequence(input));
+            setStepIndex(0);
+        }
+    }, [input, validateWord, states, transitions, getStepSequence]);
+
+    const drawCanvas = useCallback((highlightState?: State) => {
         const canvas = document.getElementById("canvas") as HTMLCanvasElement | null;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
         draw(ctx, highlightState);
-    }
+    }, [draw]);
 
     useEffect(() => {
         drawCanvas(stepStates[stepIndex]);
-    }, [stepIndex, stepStates, states, transitions, draw]);
+    }, [stepIndex, stepStates, states, transitions, draw, drawCanvas]);
 
     return (
         <BaseScreen>
@@ -81,34 +74,26 @@ export function FiniteAutomatonLayout({
                     description="Crie autômatos finitos"
                 />
 
-                <Toolbar setMode={setMode} />
+                <Toolbar mode={mode} setMode={setMode} />
 
                 <div className="flex gap-2 my-4 items-center">
-                    <input
-                        className={`border px-2 py-1 rounded text-black ${
-                            result === null
-                                ? ""
-                                : result
-                                ? "bg-green-200 border-green-500"
-                                : "bg-red-200 border-red-500"
-                        }`}
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="Digite a palavra"
+                    <TestInputComponent
+                        label="Teste interativo"
+                        testString={input}
+                        onChangeTestString={setInput}
+                        testStringFunction={() => validateWord(input)}
                     />
 
-                    <button
+                    <TextAppButton
+                        text="←"
                         onClick={() => setStepIndex((prev) => Math.max(prev - 1, 0))}
-                        className="bg-gray-300 px-2 py-1 rounded"
-                    >
-                        Back
-                    </button>
-                    <button
+                        className="mt-auto"
+                    />
+                    <TextAppButton
+                        text="→"
                         onClick={() => setStepIndex((prev) => Math.min(prev + 1, stepStates.length - 1))}
-                        className="bg-gray-300 px-2 py-1 rounded"
-                    >
-                        Next
-                    </button>
+                        className="mt-auto"
+                    />
                 </div>
 
                 <canvas id="canvas" width={800} height={600}></canvas>

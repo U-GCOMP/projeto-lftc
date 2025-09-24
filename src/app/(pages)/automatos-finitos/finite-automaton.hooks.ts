@@ -374,14 +374,6 @@ export function useAutomaton(): FiniteAutomatonProps {
         setTransitions((prev) => prev.filter((t) => t !== transition));
     }, []);
 
-    const editState = useCallback((updated: State) => {
-        setStates((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-    }, []);
-
-    const editTransition = useCallback((updated: Transition) => {
-        setTransitions((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-    }, []);
-
     // Converte coordenadas de clique (pixel) para coordenadas do mundo (com câmera)
     const screenToWorld = useCallback((p: Point): Point => {
         const { width, height } = canvasSize;
@@ -776,12 +768,6 @@ export function useAutomaton(): FiniteAutomatonProps {
         transitions,
         mode,
         setMode,
-        addState,
-        addTransition,
-        removeState,
-        removeTransition,
-        editState,
-        editTransition,
         validateWord,
         draw,
     };

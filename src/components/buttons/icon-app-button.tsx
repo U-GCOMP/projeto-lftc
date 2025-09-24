@@ -8,14 +8,19 @@ interface IconAppButtonProps {
     width?: number,
     height?: number,
     className?: string,
-    buttonProps?: ButtonHTMLAttributes<HTMLButtonElement>
+    buttonProps?: ButtonHTMLAttributes<HTMLButtonElement>,
+    isHighlighted?: boolean
 }
 
 
-export function IconAppButton({ onClick, icon, alt, width = 24, height = 24, className, buttonProps }: IconAppButtonProps) {
+export function IconAppButton({ onClick, icon, alt, width = 24, height = 24, className, buttonProps, isHighlighted = false }: IconAppButtonProps) {
+    const highlightClasses = isHighlighted 
+        ? "bg-accent-300 shadow-lg" 
+        : "hover:scale-110";
+
     return (
         <button
-            className={`flex items-center justify-center m-0 hover:scale-110 ${className}`}
+            className={`flex items-center justify-center m-0 p-2 rounded-lg transition-all duration-200 ${highlightClasses} ${className}`}
             onClick={onClick}
             aria-label={alt}
             {...buttonProps}
