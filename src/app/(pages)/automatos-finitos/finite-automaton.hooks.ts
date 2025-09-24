@@ -563,16 +563,12 @@ export function useAutomaton(): FiniteAutomatonProps {
         if (clickedState) {
             const value = prompt("Insira o valor da transição:");
 
-            if (value === null) {
-                return;
-            }
-
-            if (value.length > 1) {
+            if (value && value.length > 1) {
                 alert("Cadeia da transicao deve ser 1");
                 return;
             }
 
-            if (value.length === 0) {
+            if (!value || value.length === 0) {
                 addTransition(selected.current, clickedState, 'λ');
             } else {
                 addTransition(selected.current, clickedState, value);
